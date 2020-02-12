@@ -15,7 +15,7 @@ const columns = [
         render(value) {
             return html`
                 <span
-                    style="font-family: sans-serif; overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap"
+                    style="font-family: 'Titillium Web'; overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #FFF"
                 >
                     ${value ? new Date(value).toLocaleDateString() : "Não disponível"}
                 </span>
@@ -29,14 +29,14 @@ const columns = [
         render(value) {
             const active = value === "active";
             return html`
-        <span
-          style="font-weight: bold; padding: 6px; color: #FFF; background-color: ${active
-                    ? "green"
-                    : "#F00"}; font-family: sans-serif; border-radius: 7px;"
-        >
-          ${active ? "Ativo" : "Inativo"}
-        </span>
-      `;
+                <span
+                    style="font-weight: bold; padding: 6px; color: #FFF; background-color: ${active
+                                ? "green"
+                                : "#F00"}; font-family: 'Titillium Web'; border-radius: 7px;"
+                    >
+                    ${active ? "Ativo" : "Inativo"}
+                </span>
+            `;
         }
     },
     {
@@ -44,7 +44,7 @@ const columns = [
         label: "Valor",
         align: 'right',
         render(value) {
-            return html`<span style="font-family: sans-serif;">
+            return html`<span style="font-family: 'Titillium Web'; background-color: #FFF">
                 ${formatter.format(value)}
             </span>`
         }
@@ -58,7 +58,7 @@ const columns = [
         render(value) {
             return html`
                 <span
-                    style="font-family: sans-serif; overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap"
+                    style="font-family: 'Titillium Web'; overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #FFF"
                 >
                     ${value ? new Date(value).toLocaleDateString() : "Não disponível"}
                 </span>
@@ -75,7 +75,7 @@ const columns = [
                 <span
                     style="font-weight: bold; padding: 6px; color: #FFF; background-color: ${active
                             ? "green"
-                            : "#F00"}; font-family: sans-serif; border-radius: 7px;"
+                            : "#F00"}; font-family: 'Titillium Web'; border-radius: 7px;"
                 >
                     ${active ? "Ativo" : "Inativo"}
                 </span>
@@ -103,7 +103,11 @@ const data = x([
         next_status: "active",
         amount: 100.00,
     },
-    { name: "John Doe", create_date: new Date().toISOString(), status: "active" },
+    {
+        name: "John Doe",
+        create_date: new Date().toISOString(),
+        status: "active"
+    },
     {
         name: "Fulano Beltrano",
         create_date: new Date().toISOString(),
@@ -120,10 +124,10 @@ function x(a, n) {
 }
 
 const state = {
-    frame: -1,
     mousedown: false,
     resizing: null,
-    cols: []
+    cols: [],
+    fonts: []
 };
 
 function getMousePos(evt) {
@@ -149,19 +153,16 @@ function getColState(key) {
     return state.cols.find(col => col.key === key);
 }
 
-const rowHeight = 40;
-const fontSize = 12;
+const rowHeight = 50;
+const fontSize = 14;
 
 function defaultCellRenderer(value) {
-    return html`<span style="font-family: sans-serif; white-space: nowrap">${value}</span>`
+    return html`<span style="font-family: 'Titillium Web'; white-space: nowrap; background-color: #FFF">${value}</span>`
 }
 
 window.state = state
 
 function render() {
-    if (state.frame++ === Number.MAX_SAFE_INTEGER) {
-        state.frame = -1;
-    }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -179,7 +180,7 @@ function render() {
         ctx.fillRect(xRender, yRender, width, rowHeight)
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
-        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.font = `bold ${fontSize}px 'Titillium Web'`;
         ctx.fillText(
             col.label || "",
             xRender + width / 2,
@@ -191,20 +192,19 @@ function render() {
     }
 
     xRender = 0;
-    ctx.font = `normal ${fontSize}px sans-serif`;
-    ctx.fillStyle = "#FFF";
-
+    ctx.font = `normal ${fontSize}px 'Titillium Web'`;
+    ctx.fillStyle = "#FFF"
     data.forEach((d, dataIndex) => {
         xRender = 0;
         yRender += rowHeight;
-        columns.forEach(col => {
+        columns.forEach((col, j) => {
             const colState = getColState(col.key);
             const { width, renderCache } = colState;
             ctx.strokeRect(xRender, yRender, width, rowHeight);
-            ctx.fillRect(xRender, yRender, width, rowHeight)
+            // ctx.fillStyle = j % 2 === 0 ? "#FF0" : "#F0F";
+            ctx.fillRect(xRender - 1, yRender, width + 1, rowHeight)
             const { value, renderer } = renderCache[dataIndex] || {};
             if (value === d[col.key] && renderer) {
-                renderer.frame = state.frame;
                 renderer(xRender, yRender, width);
             } else {
                 renderHTML(
@@ -214,7 +214,6 @@ function render() {
                     yRender,
                     width,
                     rowHeight,
-                    state.frame,
                     col.align
                 ).then(renderer => {
                     renderCache[dataIndex] = {
@@ -228,18 +227,24 @@ function render() {
     });
 }
 
+function clearCache() {
+    state.cols.forEach(col => {
+        col.renderCache = []
+    })
+}
+
 function onMouseMove(e) {
-    const { x } = getMousePos(e);
+    const { x, y } = getMousePos(e);
     const offset = 3;
     let offsetX = 0;
     if (!state.mousedown) {
         state.resizing = false;
         for (const colState of state.cols) {
             const mouseoverdragX =
-                offsetX + colState.width - offset <= x &&
-                x <= offsetX + colState.width + offset;
+                y <= rowHeight &&
+                offsetX + colState.width - offset <= x && x <= offsetX + colState.width + offset;
             if (mouseoverdragX) {
-                document.body.style.cursor = "col-resize";
+                canvas.style.cursor = "col-resize";
                 state.resizing = colState.key;
                 break;
             }
@@ -248,7 +253,7 @@ function onMouseMove(e) {
     }
 
     if (!state.resizing) {
-        document.body.style.cursor = "auto";
+        canvas.style.cursor = "auto";
         return;
     }
     if (state.mousedown) {
@@ -270,13 +275,13 @@ function onMouseDown() {
 function onMouseUp() {
     state.mousedown = false;
     state.resizing = null;
-    document.body.style.cursor = "auto";
+    canvas.style.cursor = "auto";
     render();
 }
 
 function onMouseLeave() {
     state.resizing = null;
-    document.body.style.cursor = "auto";
+    canvas.style.cursor = "auto";
 }
 
 function debounce(func, wait, immediate) {
@@ -301,15 +306,15 @@ canvas.addEventListener("mousedown", onMouseDown);
 window.addEventListener("mouseup", onMouseUp);
 canvas.addEventListener("mouseleave", onMouseLeave);
 
-function renderHTML(ctx, html, x, y, cellWidth, cellHeight, frame, alignment) {
+function renderHTML(ctx, html, x, y, cellWidth, cellHeight, alignment) {
     return new Promise(resolve => {
 
         const div = document.createElement("div");
         div.style = "position: fixed; top: 100vh; left: 100vw";
         div.innerHTML = html;
         document.body.appendChild(div);
-        const width = div.offsetWidth + 10;
-        const height = div.offsetHeight + 15;
+        const width = div.offsetWidth + 7;
+        const height = div.offsetHeight + 14;
         html = html.replace(/#/g, "%23");
 
         const data = `data:image/svg+xml;charset=utf-8,
@@ -317,20 +322,25 @@ function renderHTML(ctx, html, x, y, cellWidth, cellHeight, frame, alignment) {
                 width="${width}"
                 height="${height}">
                 <foreignObject width="100%" height="100%">
-                <body xmlns="http://www.w3.org/1999/xhtml">
-                    ${html}
-                </body>
+                    <body xmlns="http://www.w3.org/1999/xhtml">
+                        <style>
+                            ${state.fonts.join("")}
+                            body { margin-left: 0; margin-right: 0 }
+                        </style>
+                        ${html}
+                    </body>
                 </foreignObject>
             </svg>    
         `;
         div.parentElement.removeChild(div);
         const img = new Image();
-        img.onload = () => {
-            const renderer = (x, y, cellWidth) => {
-                y += 4
-                if (renderer.frame === state.frame) {
+        img.onload = () =>
+            window.createImageBitmap(img).then(bitmap => {
+                const renderer = (x, y, cellWidth) => {
+                    x += 4
+                    y += 4
                     const renderWidth = Math.min(width, cellWidth - 6)
-                    const preDefArgs = [img, 0, 0, renderWidth, height]
+                    const preDefArgs = [bitmap, 0, 0, renderWidth, height]
                     let pos = [x, y]
                     const postDefArgs = [renderWidth, height]
                     switch (alignment) {
@@ -341,15 +351,42 @@ function renderHTML(ctx, html, x, y, cellWidth, cellHeight, frame, alignment) {
                             pos = [x + (x + cellWidth - (x + width)) / 2, y]
                     }
                     ctx.drawImage.apply(ctx, [...preDefArgs, ...pos, ...postDefArgs])
-                }
-            };
-            renderer.frame = frame;
-            renderer(x, y, cellWidth);
-            resolve(renderer);
-        };
+                };
+                renderer(x, y, cellWidth);
+                resolve(renderer);
+            })
         img.src = data;
     });
 }
 
+async function addWebFont(url) {
+    const css = await fetch(url).then(r => r.text())
+    const URL_RE = /url\(([^)]*)\)/g
+    const fontFilesCache = {}
+    while (true) {
+        const match = URL_RE.exec(css)
+        if (!match) { break }
+        const [, fontUrl] = match
+        if (fontFilesCache[fontUrl]) { continue }
+        fontFilesCache[fontUrl] = await fetchFontFile(fontUrl)
+    }
+    state.fonts.push(css.replace(URL_RE, (_, fontUrl) => {
+        return `url(${fontFilesCache[fontUrl]})`
+    }))
+    clearCache()
+    render()
+}
+
+async function fetchFontFile(fontFileURL) {
+    return new Promise(resolve => {
+        fetch(fontFileURL).then(r => r.blob()).then(b => {
+            const fr = new FileReader()
+            fr.onload = function() { resolve(this.result) }
+            fr.readAsDataURL(b)
+        })
+    })
+}
+
 init();
 render();
+addWebFont('https://fonts.googleapis.com/css?family=Titillium+Web')
