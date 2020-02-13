@@ -2,7 +2,7 @@ import { ifndef } from "./ifndef";
 import { fetchFontFile } from "./fetchFontFile";
 import { debounce } from "./debounce";
 import { defaultCellRenderer } from "./defaultCellRenderer";
-import { CanvasDatatableOptions } from "./types";
+import { CanvasDatatableOptions, CellAlignment, ColumnState, CanvasDatatableState, CellRenderer } from "./types";
 
 const defaultOptions = {
     columns: [],
@@ -22,7 +22,7 @@ export class CanvasDatatable {
     private options: CanvasDatatableOptions
     private canvas: HTMLCanvasElement
     private ctx: CanvasRenderingContext2D
-    private state: any
+    private state: CanvasDatatableState
     private getEventHandlers: any
 
     public constructor(canvas: HTMLCanvasElement, options: CanvasDatatableOptions = defaultOptions) {
@@ -77,7 +77,7 @@ export class CanvasDatatable {
         this.render()
     }
 
-    static addWebFont(url) {
+    public static addWebFont(url: string) {
         
         let urlCSS = null
         const URL_RE = /url\(([^)]*)\)/g
@@ -109,7 +109,7 @@ export class CanvasDatatable {
             })
     }
 
-    getMousePos(evt) {
+    private getMousePos(evt: MouseEvent) {
         var rect = this.canvas.getBoundingClientRect();
         return {
             x: evt.clientX - rect.left,
@@ -117,17 +117,17 @@ export class CanvasDatatable {
         }
     }
 
-    getColState(key) {
+    private getColState(key: string) {
         return this.state.cols.find(col => col.key === key)
     }
 
-    onMouseMove(e) {
+    private onMouseMove(e: MouseEvent) {
         const { rowHeight } = this.options
         const { x, y } = this.getMousePos(e);
         const offset = 3;
         let offsetX = 0;
         if (!this.state.mousedown) {
-            this.state.resizing = false;
+            this.state.resizing = null;
             for (const colState of this.state.cols) {
                 const mouseoverdragX =
                     y <= rowHeight &&
@@ -158,23 +158,31 @@ export class CanvasDatatable {
         }
     }
 
-    onMouseDown() {
+    private onMouseDown() {
         this.state.mousedown = true;
     }
     
-    onMouseUp() {
+    private onMouseUp() {
         this.state.mousedown = false;
         this.state.resizing = null;
         this.canvas.style.cursor = "auto";
         this.render();
     }
     
-    onMouseLeave() {
+    private onMouseLeave() {
         this.state.resizing = null;
         this.canvas.style.cursor = "auto";
     }
 
-    renderHTML(html, x, y, cellWidth, cellHeight, alignment) {
+    private renderHTML(
+        html: string,
+        x: number,
+        y: number,
+        cellWidth: number,
+        cellHeight: number,
+        alignment: CellAlignment
+    ): Promise<CellRenderer> {
+        
         return new Promise(resolve => {
 
             const div = document.createElement("div");
@@ -207,7 +215,7 @@ export class CanvasDatatable {
             const img = new Image();
             img.onload = () =>
                 window.createImageBitmap(img).then(bitmap => {
-                    const renderer = (x, y, cellWidth) => {
+                    const renderer = (x: number, y: number, cellWidth: number) => {
                         x += 4
                         y += 4
                         const renderWidth = Math.min(width, cellWidth - 6)
@@ -231,13 +239,7 @@ export class CanvasDatatable {
         });
     }
 
-    clearCache() {
-        this.state.cols.forEach(col => {
-            col.renderCache = []
-        })
-    }
-
-    render({ noCache } = { noCache: false }) {
+    public render({ noCache } = { noCache: false }) {
         const { rowHeight, columns, font, fontSize } = this.options
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -300,12 +302,12 @@ export class CanvasDatatable {
         });
     }
 
-    setData(data) {
+    public setData(data) {
         this.data = data
         this.render()
     }
 
-    dispose() {
+    public dispose() {
         window.removeEventListener('mouseup', this.getEventHandlers().onMouseUp)
         CanvasDatatable.instances.splice(CanvasDatatable.instances.indexOf(this), 1)
     }
