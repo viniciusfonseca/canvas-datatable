@@ -42,4 +42,5 @@ export interface CanvasDatatableState {
     resizing: string | null
     cols: ColumnState[]
     fonts: string[]
+    hoverRowIndex: number | null
 }

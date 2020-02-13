@@ -15,8 +15,7 @@ const columns = [
         align: 'center',
         render(value) {
             return html`
-                <span style="overflow-x: hidden; white-space: nowrap;"
-                >
+                <span style="overflow-x: hidden; white-space: nowrap;">
                     ${value ? new Date(value).toLocaleDateString() : "Não disponível"}
                 </span>
             `;

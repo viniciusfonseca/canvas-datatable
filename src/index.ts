@@ -41,11 +41,12 @@ export class CanvasDatatable {
 
         const { columns } = options
 
-        const state = {
+        const state: CanvasDatatableState = {
             mousedown: false,
             resizing: null,
             cols: [],
-            fonts: []
+            fonts: [],
+            hoverRowIndex: null
         }
 
         for (const col of columns) {
@@ -131,12 +132,14 @@ export class CanvasDatatable {
         const { x, y } = this.getMousePos(e);
         const offset = 3;
         let offsetX = 0;
+        this.state.hoverRowIndex = y / rowHeight
         if (!this.state.mousedown) {
-            this.state.resizing = null;
+            this.state.resizing = null
             for (const colState of this.state.cols) {
-                const mouseoverdragX =
+                const mouseoverdragX = (
                     y <= rowHeight &&
-                    offsetX + colState.width - offset <= x && x <= offsetX + colState.width + offset;
+                    offsetX + colState.width - offset <= x && x <= offsetX + colState.width + offset
+                )
                 if (mouseoverdragX) {
                     this.canvas.style.cursor = "col-resize";
                     this.state.resizing = colState.key;
@@ -263,11 +266,11 @@ export class CanvasDatatable {
         let xRender = 0,
             yRender = 0;
 
-        for (const col of columns) {
+        columns.forEach((col, i) => {
             const { width } = this.getColState(col.key);
             this.ctx.strokeStyle = "#999";
-            this.ctx.fillStyle = "#FFF";
             this.ctx.strokeRect(xRender, yRender, width, rowHeight);
+            this.ctx.fillStyle = "#FFF";
             this.ctx.fillRect(xRender, yRender, width, rowHeight)
             this.ctx.fillStyle = "#000";
             this.ctx.textAlign = "center";
@@ -280,7 +283,7 @@ export class CanvasDatatable {
             );
 
             xRender += width;
-        }
+        })
 
         xRender = 0;
         this.ctx.font = `normal ${fontSize}px ${font}`;
@@ -293,10 +296,10 @@ export class CanvasDatatable {
                 const { width, renderCache } = colState;
                 this.ctx.strokeRect(xRender, yRender, width, rowHeight);
                 // ctx.fillStyle = j % 2 === 0 ? "#FF0" : "#F0F";
+                this.ctx.fillStyle = this.state.hoverRowIndex === dataIndex ? this.options.hoverColor : "#FFF";
                 this.ctx.fillRect(xRender - 1, yRender, width + 1, rowHeight)
                 const { value, renderer } = renderCache[dataIndex] || {};
                 const hasValueChanged = !(value === d[col.key] && renderer)
-                // console.log({ hasValueChanged, noCache })
                 if (!hasValueChanged) {
                     renderer(xRender, yRender, width);
                 }
