@@ -2,7 +2,7 @@ import { ifndef } from "./ifndef";
 import { fetchFontFile } from "./fetchFontFile";
 import { debounce } from "./debounce";
 import { defaultCellRenderer } from "./defaultCellRenderer";
-import { CanvasDatatableOptions, CellAlignment, ColumnState, CanvasDatatableState, CellRenderer } from "./types";
+import { CanvasDatatableOptions, CellAlignment, CanvasDatatableState, CellRenderer, RenderOptions } from "./types";
 
 const defaultOptions = {
     columns: [],
@@ -11,6 +11,10 @@ const defaultOptions = {
     font: "'Titillium Web', sans-serif",
     fontSize: 14,
     fitToContainer: false
+}
+
+const defaultRenderOptions = {
+    noCache: false
 }
 
 export class CanvasDatatable {
@@ -239,7 +243,12 @@ export class CanvasDatatable {
         });
     }
 
-    public render({ noCache } = { noCache: false }) {
+    public render(renderOptions: RenderOptions = defaultRenderOptions) {
+
+        renderOptions.noCache = ifndef(renderOptions, false)
+
+        const { noCache } = renderOptions
+
         const { rowHeight, columns, font, fontSize } = this.options
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -302,7 +311,7 @@ export class CanvasDatatable {
         });
     }
 
-    public setData(data) {
+    public setData(data: any[]) {
         this.data = data
         this.render()
     }

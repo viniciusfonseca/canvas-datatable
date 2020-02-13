@@ -19,6 +19,11 @@ export type ColumnDefinition = Partial<{
     render(value: string): string
 }>
 
+
+export type RenderOptions = Partial<{
+    noCache: boolean
+}>
+
 export interface ColumnState {
     key: string
     width: number
