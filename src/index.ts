@@ -245,9 +245,7 @@ export class CanvasDatatable {
 
     public render(renderOptions: RenderOptions = defaultRenderOptions) {
 
-        renderOptions.noCache = ifndef(renderOptions, false)
-
-        const { noCache } = renderOptions
+        const { noCache = false } = renderOptions
 
         const { rowHeight, columns, font, fontSize } = this.options
 
