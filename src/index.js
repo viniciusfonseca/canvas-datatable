@@ -1,1 +1,0 @@
-export { CanvasDatatable } from "./canvas-datatable";

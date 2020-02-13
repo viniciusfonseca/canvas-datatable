@@ -2,6 +2,7 @@ import { ifndef } from "./ifndef";
 import { fetchFontFile } from "./fetchFontFile";
 import { debounce } from "./debounce";
 import { defaultCellRenderer } from "./defaultCellRenderer";
+import { CanvasDatatableOptions } from "./types";
 
 const defaultOptions = {
     columns: [],
@@ -14,12 +15,17 @@ const defaultOptions = {
 
 export class CanvasDatatable {
 
-    /**
-     * @constructor
-     * @param {HTMLCanvasElement} canvas
-     * @param {import(".").CanvasDatatableOptions} options
-     */
-    constructor(canvas, options = defaultOptions) {
+    public static instances: CanvasDatatable[] = []
+    public static fonts: string[] = []
+
+    private data: any[]
+    private options: CanvasDatatableOptions
+    private canvas: HTMLCanvasElement
+    private ctx: CanvasRenderingContext2D
+    private state: any
+    private getEventHandlers: any
+
+    public constructor(canvas: HTMLCanvasElement, options: CanvasDatatableOptions = defaultOptions) {
 
         options.columns = ifndef(options.columns, [])
         options.initialData = ifndef(options.initialData, [])
@@ -71,23 +77,36 @@ export class CanvasDatatable {
         this.render()
     }
 
-    static async addWebFont(url) {
-        const css = await fetch(url).then(r => r.text())
+    static addWebFont(url) {
+        
+        let urlCSS = null
         const URL_RE = /url\(([^)]*)\)/g
-        const fontFilesCache = {}
-        while (true) {
-            const match = URL_RE.exec(css)
-            if (!match) { break }
-            const [, fontUrl] = match
-            if (fontFilesCache[fontUrl]) { continue }
-            fontFilesCache[fontUrl] = await fetchFontFile(fontUrl)
-        }
-        CanvasDatatable.fonts.push(css.replace(URL_RE, (_, fontUrl) => {
-            return `url(${fontFilesCache[fontUrl]})`
-        }))
-        for (const canvasDatatable of CanvasDatatable.instances) {
-            canvasDatatable.render({ noCache: true })
-        }
+
+        fetch(url).then(r => r.text())
+            .then(css => {
+                urlCSS = css
+                const fontFilesCache = {}
+                while (true) {
+                    const match = URL_RE.exec(css)
+                    if (!match) { break }
+                    const [, fontUrl] = match
+                    if (fontFilesCache[fontUrl]) { continue }
+                    fontFilesCache[fontUrl] = fetchFontFile(fontUrl).then(css => ({ fontUrl, css }))
+                }
+                return Promise.all(Object.values(fontFilesCache))
+            }).then(fonts => {
+                const fontFilesCache = Object.assign.apply(null, fonts.map(
+                    ({ fontUrl, css }) => ({ [fontUrl]: css }))
+                )
+
+                CanvasDatatable.fonts.push(urlCSS.replace(URL_RE, (_, fontUrl) => {
+                    return `url(${fontFilesCache[fontUrl]})`
+                }))
+
+                for (const canvasDatatable of CanvasDatatable.instances) {
+                    canvasDatatable.render({ noCache: true })
+                }
+            })
     }
 
     getMousePos(evt) {
@@ -159,13 +178,15 @@ export class CanvasDatatable {
         return new Promise(resolve => {
 
             const div = document.createElement("div");
-            div.style = "position: fixed; top: 100vh; left: 100vw";
+            div.style.position = 'fixed'
+            div.style.top = '100vh'
+            div.style.left = '100vw'
             div.innerHTML = html;
             document.body.appendChild(div);
             const width = div.offsetWidth + 12;
             const height = div.offsetHeight + 20;
             html = html.replace(/#/g, "%23");
-    
+
             const data = String.raw`data:image/svg+xml;charset=utf-8,
                 <svg xmlns="http://www.w3.org/2000/svg"
                     width="${width}"
@@ -260,23 +281,19 @@ export class CanvasDatatable {
                 this.ctx.fillRect(xRender - 1, yRender, width + 1, rowHeight)
                 const { value, renderer } = renderCache[dataIndex] || {};
                 const hasValueChanged = !(value === d[col.key] && renderer)
+                // console.log({ hasValueChanged, noCache })
                 if (!hasValueChanged) {
                     renderer(xRender, yRender, width);
                 }
-                if (hasValueChanged || noCache) {
-                    this.renderHTML(
-                        (col.render || defaultCellRenderer)(d[col.key] || "", font),
-                        xRender,
-                        yRender,
-                        width,
-                        rowHeight,
-                        col.align
-                    ).then(renderer => {
-                        renderCache[dataIndex] = {
-                            value: d[col.key],
-                            renderer
-                        };
-                    });
+                if (noCache || hasValueChanged) {
+                    const html = (col.render || defaultCellRenderer)(d[col.key] || "", font)
+                    this.renderHTML(html, xRender, yRender, width, rowHeight, col.align)
+                        .then(renderer => {
+                            renderCache[dataIndex] = {
+                                value: d[col.key],
+                                renderer
+                            };
+                        });
                 }
                 xRender += width;
             });
@@ -293,9 +310,3 @@ export class CanvasDatatable {
         CanvasDatatable.instances.splice(CanvasDatatable.instances.indexOf(this), 1)
     }
 }
-
-/** @type {string[]} */
-CanvasDatatable.fonts = []
-
-/** @type {CanvasDatatable[]} */
-CanvasDatatable.instances = []

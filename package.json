@@ -5,12 +5,18 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "parcel index.html --open",
-    "build": "parcel build index.html"
+    "build": "parcel build index.html",
+    "prepublish": "rimraf dist && tsc"
   },
+  "files": [
+    "dist"
+  ],
   "dependencies": {},
   "devDependencies": {
     "@babel/core": "7.2.0",
-    "parcel-bundler": "^1.6.1"
+    "parcel-bundler": "^1.6.1",
+    "rimraf": "^3.0.2",
+    "typescript": "^3.7.5"
   },
   "keywords": [],
   "browserslist": [

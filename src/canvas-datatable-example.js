@@ -1,10 +1,11 @@
-import { CanvasDatatable } from "./canvas-datatable";
+import { CanvasDatatable } from ".";
 
 const html = String.raw;
 
 /** @type {HTMLCanvasElement} */
 const canvas = document.getElementById("canvas-datatable");
 
+/** @type {import("./canvas-datatable").ColumnDefinition[]} */
 const columns = [
     { key: "name", label: "Nome", width: 130 },
     {
@@ -15,7 +16,7 @@ const columns = [
         render(value) {
             return html`
                 <span
-                    style="overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #FFF;"
+                    style="overflow-x: hidden; white-space: nowrap; background-color: #FFF;"
                 >
                     ${value ? new Date(value).toLocaleDateString() : "Não disponível"}
                 </span>
@@ -44,21 +45,23 @@ const columns = [
         label: "Valor",
         align: 'right',
         render(value) {
-            return html`<span style="background-color: #FFF">
-                ${formatter.format(value)}
-            </span>`
+            return html`
+                <span style="background-color: #FFF">
+                    ${formatter.format(value)}
+                </span>
+            `
         }
     },
     { key: "last_name", label: "Nome", width: 130 },
     {
         key: "update_date",
-        label: "Data de Cadastro",
+        label: "Data de Atualização",
         width: 200,
         align: 'center',
         render(value) {
             return html`
                 <span
-                    style="overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #FFF"
+                    style="overflow-x: hidden; white-space: nowrap; background-color: #FFF"
                 >
                     ${value ? new Date(value).toLocaleDateString() : "Não disponível"}
                 </span>
