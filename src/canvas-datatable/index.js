@@ -15,7 +15,7 @@ const defaultOptions = {
 export class CanvasDatatable {
 
     /**
-     *
+     * @constructor
      * @param {HTMLCanvasElement} canvas
      * @param {import(".").CanvasDatatableOptions} options
      */
@@ -163,7 +163,7 @@ export class CanvasDatatable {
             div.innerHTML = html;
             document.body.appendChild(div);
             const width = div.offsetWidth + 12;
-            const height = div.offsetHeight + 14;
+            const height = div.offsetHeight + 20;
             html = html.replace(/#/g, "%23");
     
             const data = String.raw`data:image/svg+xml;charset=utf-8,
