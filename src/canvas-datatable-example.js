@@ -15,8 +15,7 @@ const columns = [
         align: 'center',
         render(value) {
             return html`
-                <span
-                    style="overflow-x: hidden; white-space: nowrap; background-color: #FFF;"
+                <span style="overflow-x: hidden; white-space: nowrap;"
                 >
                     ${value ? new Date(value).toLocaleDateString() : "Não disponível"}
                 </span>
@@ -46,9 +45,7 @@ const columns = [
         align: 'right',
         render(value) {
             return html`
-                <span style="background-color: #FFF">
-                    ${formatter.format(value)}
-                </span>
+                <span> ${formatter.format(value)} </span>
             `
         }
     },
@@ -60,9 +57,7 @@ const columns = [
         align: 'center',
         render(value) {
             return html`
-                <span
-                    style="overflow-x: hidden; white-space: nowrap; background-color: #FFF"
-                >
+                <span style="overflow-x: hidden; white-space: nowrap;">
                     ${value ? new Date(value).toLocaleDateString() : "Não disponível"}
                 </span>
             `;

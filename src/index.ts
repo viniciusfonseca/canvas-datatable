@@ -4,13 +4,14 @@ import { debounce } from "./debounce";
 import { defaultCellRenderer } from "./defaultCellRenderer";
 import { CanvasDatatableOptions, CellAlignment, CanvasDatatableState, CellRenderer, RenderOptions } from "./types";
 
-const defaultOptions = {
+const defaultOptions: CanvasDatatableOptions = {
     columns: [],
     initialData: [],
     rowHeight: 50,
     font: "'Titillium Web', sans-serif",
     fontSize: 14,
-    fitToContainer: false
+    fitToContainer: false,
+    hoverColor: '#E8E8E8'
 }
 
 const defaultRenderOptions = {
@@ -207,7 +208,12 @@ export class CanvasDatatable {
                         <body xmlns="http://www.w3.org/1999/xhtml">
                             <style>
                                 ${CanvasDatatable.fonts.join("")}
-                                body { margin-left: 0; margin-right: 0; font-family: ${this.options.font}, sans-serif }
+                                body {
+                                    margin-left: 0;
+                                    margin-right: 0;
+                                    font-family: ${this.options.font}, sans-serif;
+                                    background: rgba(255, 255, 255)
+                                }
                             </style>
                             ${html}
                         </body>
@@ -295,7 +301,7 @@ export class CanvasDatatable {
                     renderer(xRender, yRender, width);
                 }
                 if (noCache || hasValueChanged) {
-                    const html = (col.render || defaultCellRenderer)(d[col.key] || "", font)
+                    const html = (col.render || defaultCellRenderer)(d[col.key] || "", d, font)
                     this.renderHTML(html, xRender, yRender, width, rowHeight, col.align)
                         .then(renderer => {
                             renderCache[dataIndex] = {

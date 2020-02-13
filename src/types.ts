@@ -9,6 +9,7 @@ export type CanvasDatatableOptions = Partial<{
     font: string
     fontSize: number
     fitToContainer: boolean
+    hoverColor: string
 }>
 
 export type ColumnDefinition = Partial<{
@@ -16,7 +17,7 @@ export type ColumnDefinition = Partial<{
     label: string
     width: number
     align: CellAlignment
-    render(value: string): string
+    render(value: string, row: any): string
 }>
 
 
