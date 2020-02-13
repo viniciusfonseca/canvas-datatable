@@ -1,9 +1,12 @@
 {
     "compilerOptions": {
-        "allowJs": false,
         "declaration": true,
         "target": "ES2017",   
         "outDir": "dist",
         "module": "CommonJS"
-    }
+    },
+    "exclude": [
+        "dist",
+        "src/**/*.js"
+    ]
 }
