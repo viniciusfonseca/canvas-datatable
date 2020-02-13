@@ -8,5 +8,5 @@ export interface CanvasDatatableOptions {
 }
 
 export interface ColumnDefinition {
-
+    
 }

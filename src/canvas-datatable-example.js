@@ -15,7 +15,7 @@ const columns = [
         render(value) {
             return html`
                 <span
-                    style="font-family: 'Titillium Web'; overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #FFF"
+                    style="overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #FFF;"
                 >
                     ${value ? new Date(value).toLocaleDateString() : "Não disponível"}
                 </span>
@@ -32,7 +32,7 @@ const columns = [
                 <span
                     style="font-weight: bold; padding: 6px; color: #FFF; background-color: ${active
                                 ? "green"
-                                : "#F00"}; font-family: 'Titillium Web'; border-radius: 7px;"
+                                : "#F00"}; border-radius: 7px;"
                     >
                     ${active ? "Ativo" : "Inativo"}
                 </span>
@@ -44,7 +44,7 @@ const columns = [
         label: "Valor",
         align: 'right',
         render(value) {
-            return html`<span style="font-family: 'Titillium Web'; background-color: #FFF">
+            return html`<span style="background-color: #FFF">
                 ${formatter.format(value)}
             </span>`
         }
@@ -58,7 +58,7 @@ const columns = [
         render(value) {
             return html`
                 <span
-                    style="font-family: 'Titillium Web'; overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #FFF"
+                    style="overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #FFF"
                 >
                     ${value ? new Date(value).toLocaleDateString() : "Não disponível"}
                 </span>
@@ -75,7 +75,7 @@ const columns = [
                 <span
                     style="font-weight: bold; padding: 6px; color: #FFF; background-color: ${active
                             ? "green"
-                            : "#F00"}; font-family: 'Titillium Web'; border-radius: 7px;"
+                            : "#F00"}; border-radius: 7px;"
                 >
                     ${active ? "Ativo" : "Inativo"}
                 </span>

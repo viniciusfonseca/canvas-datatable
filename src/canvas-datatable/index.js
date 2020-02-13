@@ -7,7 +7,7 @@ const defaultOptions = {
     columns: [],
     initialData: [],
     rowHeight: 50,
-    font: "'Titillium Web' sans-serif",
+    font: "'Titillium Web', sans-serif",
     fontSize: 14,
     fitToContainer: false
 }
@@ -51,7 +51,7 @@ export class CanvasDatatable {
         const onMouseUp = this.onMouseUp.bind(this)
         const onMouseLeave = this.onMouseLeave.bind(this)
         
-        const debouncedOnMouseMove = debounce(onMouseMove, 1, true)
+        const debouncedOnMouseMove = debounce(onMouseMove, 0, true)
 
         canvas.addEventListener("mousemove", debouncedOnMouseMove);
         canvas.addEventListener("mousedown", onMouseDown);
@@ -86,8 +86,7 @@ export class CanvasDatatable {
             return `url(${fontFilesCache[fontUrl]})`
         }))
         for (const canvasDatatable of CanvasDatatable.instances) {
-            canvasDatatable.clearCache()
-            canvasDatatable.render()
+            canvasDatatable.render({ noCache: true })
         }
     }
 
@@ -163,7 +162,7 @@ export class CanvasDatatable {
             div.style = "position: fixed; top: 100vh; left: 100vw";
             div.innerHTML = html;
             document.body.appendChild(div);
-            const width = div.offsetWidth + 5;
+            const width = div.offsetWidth + 12;
             const height = div.offsetHeight + 14;
             html = html.replace(/#/g, "%23");
     
@@ -175,7 +174,7 @@ export class CanvasDatatable {
                         <body xmlns="http://www.w3.org/1999/xhtml">
                             <style>
                                 ${CanvasDatatable.fonts.join("")}
-                                body { margin-left: 0; margin-right: 0 }
+                                body { margin-left: 0; margin-right: 0; font-family: ${this.options.font}, sans-serif }
                             </style>
                             ${html}
                         </body>
@@ -201,6 +200,7 @@ export class CanvasDatatable {
                             case 'center':
                                 pos = [x + (x + cellWidth - (x + width)) / 2, y]
                         }
+                        this.ctx.fillRect(x - 4, y - 4, cellWidth, cellHeight - 1)
                         this.ctx.drawImage.apply(this.ctx, [...preDefArgs, ...pos, ...postDefArgs])
                     };
                     renderer(x, y, cellWidth);
@@ -216,7 +216,7 @@ export class CanvasDatatable {
         })
     }
 
-    render() {
+    render({ noCache } = { noCache: false }) {
         const { rowHeight, columns, font, fontSize } = this.options
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -259,9 +259,11 @@ export class CanvasDatatable {
                 // ctx.fillStyle = j % 2 === 0 ? "#FF0" : "#F0F";
                 this.ctx.fillRect(xRender - 1, yRender, width + 1, rowHeight)
                 const { value, renderer } = renderCache[dataIndex] || {};
-                if (value === d[col.key] && renderer) {
+                const hasValueChanged = !(value === d[col.key] && renderer)
+                if (!hasValueChanged) {
                     renderer(xRender, yRender, width);
-                } else {
+                }
+                if (hasValueChanged || noCache) {
                     this.renderHTML(
                         (col.render || defaultCellRenderer)(d[col.key] || "", font),
                         xRender,
