@@ -1,7 +1,7 @@
 {
   "name": "canvas-datatable",
   "license": "MIT",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "Small library with zero dependencies for datagrid rendering inside a canvas",
   "repository": {
     "url": "https://github.com/viniciusfonseca/canvas-datatable"

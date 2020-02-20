@@ -4,6 +4,8 @@ canvas-datatable
 Small library with zero dependencies for datagrid rendering inside a canvas.
 It has features like custom web fonts, row selecting, column resizing and custom cell rendering.
 
+__Demo__: https://codesandbox.io/s/canvas-datatable-cro4b
+
 ## Usage
 
 Install with `npm`:
