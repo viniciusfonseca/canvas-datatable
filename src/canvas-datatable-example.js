@@ -111,7 +111,7 @@ const data = x([
         create_date: new Date().toISOString(),
         status: "inactive"
     }
-], 16);
+], 10);
 
 function x(a, n) {
     const result = []
@@ -123,4 +123,17 @@ function x(a, n) {
 
 CanvasDatatable.addWebFont('https://fonts.googleapis.com/css?family=Titillium+Web')
 
-new CanvasDatatable(canvas, { initialData: data, columns, hoverColor: hexToRGBA("#eff4ff") })
+new CanvasDatatable(canvas, {
+    initialData: data,
+    columns,
+    hoverColor: hexToRGBA("#eff4ff"),
+    selectedColor: hexToRGBA('#d0dfff')
+})
+
+canvas.addEventListener("rowselect", e => {
+    console.log('row selected: ', e.detail.index)
+})
+
+canvas.addEventListener("colresize", e => {
+    console.log('new cols width', e.detail)
+})

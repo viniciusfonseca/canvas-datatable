@@ -44,4 +44,5 @@ export interface CanvasDatatableState {
     cols: ColumnState[]
     fonts: string[]
     hoverRowIndex: number | null
+    selectedRowIndex: number | null
 }

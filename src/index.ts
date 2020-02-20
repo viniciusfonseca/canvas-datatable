@@ -31,7 +31,6 @@ export class CanvasDatatable {
     private ctx: CanvasRenderingContext2D
     private state: CanvasDatatableState
     private getEventHandlers: any
-    private container: HTMLDivElement
 
     public constructor(canvas: HTMLCanvasElement, options: CanvasDatatableOptions = defaultOptions) {
 
@@ -42,6 +41,7 @@ export class CanvasDatatable {
         options.fitToContainer = ifndef(options.fitToContainer, defaultOptions.fitToContainer)
         options.fontSize = ifndef(options.fontSize, defaultOptions.fontSize)
         options.hoverColor = ifndef(options.hoverColor, defaultOptions.hoverColor)
+        options.selectedColor = ifndef(options.selectedColor, defaultOptions.selectedColor)
 
         const { columns } = options
 
@@ -50,7 +50,8 @@ export class CanvasDatatable {
             resizing: null,
             cols: [],
             fonts: [],
-            hoverRowIndex: null
+            hoverRowIndex: null,
+            selectedRowIndex : null
         }
 
         for (const col of columns) {
@@ -66,13 +67,16 @@ export class CanvasDatatable {
         const onMouseMove = this.onMouseMove.bind(this)
         const onMouseUp = this.onMouseUp.bind(this)
         const onMouseLeave = this.onMouseLeave.bind(this)
+        const onMouseClick = this.onMouseClick.bind(this)
         
         const debouncedOnMouseMove = debounce(onMouseMove, 0, true)
 
         canvas.addEventListener("mousemove", debouncedOnMouseMove);
         canvas.addEventListener("mousedown", onMouseDown);
-        window.addEventListener("mouseup", onMouseUp);
         canvas.addEventListener("mouseleave", onMouseLeave)
+        
+        window.addEventListener("mouseup", onMouseUp);
+        window.addEventListener("click", onMouseClick);
         
         this.data = options.initialData
         this.options = options
@@ -80,14 +84,9 @@ export class CanvasDatatable {
         this.ctx = canvas.getContext("2d", { alpha: true })
         this.state = state
         this.getEventHandlers = () => ({
-            onMouseUp
+            onMouseUp,
+            onMouseClick
         })
-        this.container = document.createElement('div')
-        this.container.style.position = 'relative'
-        this.container.style.display = 'inline-block'
-        this.canvas.parentNode.insertBefore(this.container, this.canvas)
-        this.canvas.parentNode.removeChild(this.canvas)
-        this.container.appendChild(this.canvas)
         CanvasDatatable.instances.push(this)
 
         this.render()
@@ -145,11 +144,7 @@ export class CanvasDatatable {
         const prevHoverRowIndex = this.state.hoverRowIndex
         this.state.hoverRowIndex = Math.floor(y / rowHeight) - 1
         if (prevHoverRowIndex !== this.state.hoverRowIndex) {
-            // this.state.cols.forEach(colState => {
-            //     colState.renderCache[this.state.hoverRowIndex] = null
-            //     colState.renderCache[prevHoverRowIndex] = null
-            // })
-            this.render({ noCache: false })
+            this.render()
         }
         if (!this.state.mousedown) {
             this.state.resizing = null
@@ -189,6 +184,11 @@ export class CanvasDatatable {
     }
     
     private onMouseUp() {
+        if (this.state.resizing) {
+            this.canvas.dispatchEvent(new CustomEvent('colresize', {
+                detail: this.state.cols.map(({ width }) => width)
+            }))
+        }
         this.state.mousedown = false;
         this.state.resizing = null;
         this.canvas.style.cursor = "auto";
@@ -200,6 +200,24 @@ export class CanvasDatatable {
         this.state.resizing = null;
         this.canvas.style.cursor = "auto";
         this.render()
+    }
+
+    private onMouseClick(e: MouseEvent) {
+        const prevSelectedRowIndex = this.state.selectedRowIndex
+        if (e.target === this.canvas) {
+            this.state.selectedRowIndex = this.state.hoverRowIndex
+            if (this.state.hoverRowIndex >= 0) {
+                this.canvas.dispatchEvent(new CustomEvent('rowselect', {
+                    detail: { index: this.state.selectedRowIndex }
+                }))
+            }
+        }
+        else {
+            this.state.selectedRowIndex = null
+        }
+        if (this.state.selectedRowIndex !== prevSelectedRowIndex) {
+            this.render()
+        }
     }
 
     private renderSVGTemplate(html: string, width: number, height: number, fillStyle: string) : string {
@@ -233,7 +251,7 @@ export class CanvasDatatable {
         alignment: CellAlignment
     ): Promise<CellRenderer> {
 
-        const fillStyle = 'rgb(255,255,255)'
+        const fillStyle = hexToRGBA('#FFFFFF')
         
         return new Promise(resolve => {
 
@@ -246,24 +264,30 @@ export class CanvasDatatable {
             const width = div.offsetWidth + 12;
             const height = div.offsetHeight + 20;
             html = html.replace(/#/g, "%23");
-            // background-color: ${fillStyle}
 
             div.parentElement.removeChild(div);
             const img = new Image();
             const imgHover = new Image();
-            let imgHoverBitmap
+            const imgSelected = new Image();
+            let imgHoverBitmap, imgSelectedBitmap
             img.onload = () => {
                 window.createImageBitmap(img).then(bitmap => {
                     const renderer = (x: number, y: number, cellWidth: number, fillStyle: string = 'rgba(255, 255, 255)') => {
                         let bitmapRender = bitmap
-                        if (fillStyle === this.options.hoverColor) {
-                            bitmapRender = imgHoverBitmap
+                        switch (fillStyle) {
+                            case this.options.hoverColor: {
+                                bitmapRender = imgHoverBitmap
+                                break;
+                            }
+                            case this.options.selectedColor: {
+                                bitmapRender = imgSelectedBitmap
+                                break;
+                            }
                         }
                         x += 4
                         y += 4
                         const renderWidth = Math.min(width, cellWidth - 6)
                         const preDefArgs = [bitmapRender, 0, 0, renderWidth, height]
-                        // const preDefArgs = [img, 0, 0, renderWidth, height]
                         let pos = [x, y]
                         const postDefArgs = [renderWidth, height]
                         switch (alignment) {
@@ -284,18 +308,24 @@ export class CanvasDatatable {
             }
             img.src = String.raw`data:image/svg+xml;charset=utf-8,${this.renderSVGTemplate(html, width, height, fillStyle)}`;
             imgHover.src = String.raw`data:image/svg+xml;charset=utf-8,${this.renderSVGTemplate(html, width, height, this.options.hoverColor)}`
+            imgSelected.src = String.raw`data:image/svg+xml;charset=utf-8,${this.renderSVGTemplate(html, width, height, this.options.selectedColor)}`
             imgHover.onload = () => {
                 window.createImageBitmap(imgHover).then(bitmap => {
                     imgHoverBitmap = bitmap
                 })
             }
-            // console.log('img.src', img.src)
-            // document.body.appendChild(img)
+            imgSelected.onload = () => {
+                window.createImageBitmap(imgSelected).then(bitmap => {
+                    imgSelectedBitmap = bitmap
+                })
+            }
         });
     }
 
     private getColBgColor(dataIndex: number) : string {
-        return this.state.hoverRowIndex === dataIndex ? this.options.hoverColor : hexToRGBA("#FFFFFF");
+        return this.state.selectedRowIndex === dataIndex ? this.options.selectedColor :
+            this.state.hoverRowIndex === dataIndex ? this.options.hoverColor :
+            hexToRGBA("#FFFFFF");
     }
 
     public render(renderOptions: RenderOptions = defaultRenderOptions) {
@@ -337,6 +367,7 @@ export class CanvasDatatable {
         this.data.forEach((d, dataIndex) => {
             xRender = 0;
             yRender += rowHeight;
+            const fillStyle = this.getColBgColor(dataIndex)
             columns.forEach(col => {
                 const colState = this.getColState(col.key);
                 const { width, renderCache } = colState;
@@ -344,16 +375,10 @@ export class CanvasDatatable {
                 this.ctx.fillRect(xRender - 1, yRender, width + 1, rowHeight)
                 const { value, renderer } = renderCache[dataIndex] || {};
                 const hasValueChanged = !(value === d[col.key] && renderer)
-                const fillStyle = this.getColBgColor(dataIndex)
                 if (!hasValueChanged) {
                     renderer(xRender, yRender, width, fillStyle);
                 }
                 if (noCache || hasValueChanged) {
-                    Array.from(this.container.children).forEach(el => {
-                        if (el.tagName.toLowerCase() === "img") {
-                            el.parentNode.removeChild(el)
-                        }
-                    })
                     const html = (col.render || defaultCellRenderer)(d[col.key] || "", d, font)
                     this.renderHTML(html, xRender, yRender, width, rowHeight, col.align)
                         .then(renderer => {
@@ -374,7 +399,9 @@ export class CanvasDatatable {
     }
 
     public dispose() {
-        window.removeEventListener('mouseup', this.getEventHandlers().onMouseUp)
+        const { onMouseUp, onMouseClick } = this.getEventHandlers()
+        window.removeEventListener('mouseup', onMouseUp)
+        window.removeEventListener('click', onMouseClick)
         CanvasDatatable.instances.splice(CanvasDatatable.instances.indexOf(this), 1)
     }
 }
