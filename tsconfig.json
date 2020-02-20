@@ -5,8 +5,7 @@
         "outDir": "dist",
         "module": "CommonJS"
     },
-    "exclude": [
-        "dist",
-        "src/**/*.js"
+    "files": [
+        "src/index.ts"
     ]
 }

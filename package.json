@@ -9,8 +9,10 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "parcel index.html --open",
-    "build": "parcel build index.html",
-    "prepublish": "rimraf dist && tsc && tsc --outDir dist/umd --module UMD"
+    "build": "rimraf dist && tsc && npm run build:esm && npm run build:umd && rimraf dist/esm",
+    "build:esm": "tsc --module es2015 --target es5 --outDir dist/esm",
+    "build:umd": "rollup dist/esm/index.js -f umd -n CanvasDatatable -o dist/umd/canvas-datatable.js",
+    "prepublish": "npm run build"
   },
   "files": [
     "dist"
@@ -20,6 +22,7 @@
     "@babel/core": "7.2.0",
     "parcel-bundler": "^1.6.1",
     "rimraf": "^3.0.2",
+    "rollup": "^1.31.1",
     "typescript": "^3.7.5"
   },
   "keywords": [],
