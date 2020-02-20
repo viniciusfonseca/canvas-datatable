@@ -1,6 +1,6 @@
 export type CellAlignment = 'left' | 'center' | 'right'
 
-export type CellRenderer = (x: number, y: number, cellWidth: number) => void
+export type CellRenderer = (x: number, y: number, cellWidth: number, fillStyle?: string) => void
 
 export type CanvasDatatableOptions = Partial<{
     columns: ColumnDefinition[]
@@ -10,6 +10,7 @@ export type CanvasDatatableOptions = Partial<{
     fontSize: number
     fitToContainer: boolean
     hoverColor: string
+    selectedColor: string
 }>
 
 export type ColumnDefinition = Partial<{

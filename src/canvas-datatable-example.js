@@ -1,4 +1,5 @@
 import { CanvasDatatable } from ".";
+import { hexToRGBA } from "./hexToRGBA";
 
 const html = String.raw;
 
@@ -122,4 +123,4 @@ function x(a, n) {
 
 CanvasDatatable.addWebFont('https://fonts.googleapis.com/css?family=Titillium+Web')
 
-new CanvasDatatable(canvas, { initialData: data, columns })
+new CanvasDatatable(canvas, { initialData: data, columns, hoverColor: hexToRGBA("#eff4ff") })
