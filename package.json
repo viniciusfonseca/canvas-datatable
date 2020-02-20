@@ -1,12 +1,16 @@
 {
   "name": "canvas-datatable",
-  "version": "0.1.0",
-  "description": "",
+  "license": "MIT",
+  "version": "0.1.1",
+  "description": "Small library with zero dependencies for datagrid rendering inside a canvas",
+  "repository": {
+    "url": "https://github.com/viniciusfonseca/canvas-datatable"
+  },
   "main": "dist/index.js",
   "scripts": {
     "start": "parcel index.html --open",
     "build": "parcel build index.html",
-    "prepublish": "rimraf dist && tsc"
+    "prepublish": "rimraf dist && tsc && tsc --outDir dist/umd --module UMD"
   },
   "files": [
     "dist"
