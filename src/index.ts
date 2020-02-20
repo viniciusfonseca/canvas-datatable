@@ -167,6 +167,7 @@ export class CanvasDatatable {
             return;
         }
         if (this.state.mousedown) {
+            this.state.hoverRowIndex = null
             offsetX = 0;
             for (const colState of this.state.cols) {
                 if (colState.key === this.state.resizing) {
