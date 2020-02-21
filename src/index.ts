@@ -276,7 +276,7 @@ export class CanvasDatatable {
             let imgHoverBitmap: ImageBitmap, imgSelectedBitmap: ImageBitmap
             img.onload = () => {
                 window.createImageBitmap(img).then(bitmap => {
-                    const renderer = (x: number, y: number, cellWidth: number, fillStyle: string = 'rgba(255, 255, 255)') => {
+                    const renderer = (x: number, y: number, cellWidth: number, fillStyle: string = hexToRGBA('#FFFFFF')) => {
                         let bitmapRender = bitmap
                         switch (fillStyle) {
                             case this.options.hoverColor: {
@@ -303,11 +303,16 @@ export class CanvasDatatable {
                         }
                         this.ctx.fillStyle = fillStyle
                         this.ctx.fillRect(x - 4, y - 4, cellWidth, cellHeight - 1)
-
-                        this.ctx.drawImage.apply(this.ctx, [...preDefArgs, ...pos, ...postDefArgs])
+                        if (bitmapRender.width > 0) {
+                            this.ctx.drawImage.apply(this.ctx, [...preDefArgs, ...pos, ...postDefArgs])
+                        }
                     };
                     renderer(x, y, cellWidth, fillStyle);
-                    const release = () => bitmap.close()
+                    const release = () => {
+                        bitmap.close()
+                        imgHoverBitmap.close()
+                        imgSelectedBitmap.close()
+                    }
                     resolve({ renderer, release });
                 })
             }
