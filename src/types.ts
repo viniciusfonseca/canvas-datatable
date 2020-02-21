@@ -36,6 +36,7 @@ export interface ColumnState {
 export interface ColumnRenderCache {
     value: string
     renderer: CellRenderer
+    release: () => void
 }
 
 export interface CanvasDatatableState {

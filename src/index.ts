@@ -250,7 +250,10 @@ export class CanvasDatatable {
         cellWidth: number,
         cellHeight: number,
         alignment: CellAlignment
-    ): Promise<CellRenderer> {
+    ): Promise<{
+        renderer: CellRenderer,
+        release: () => void
+    }> {
 
         const fillStyle = hexToRGBA('#FFFFFF')
         
@@ -270,7 +273,7 @@ export class CanvasDatatable {
             const img = new Image();
             const imgHover = new Image();
             const imgSelected = new Image();
-            let imgHoverBitmap, imgSelectedBitmap
+            let imgHoverBitmap: ImageBitmap, imgSelectedBitmap: ImageBitmap
             img.onload = () => {
                 window.createImageBitmap(img).then(bitmap => {
                     const renderer = (x: number, y: number, cellWidth: number, fillStyle: string = 'rgba(255, 255, 255)') => {
@@ -304,7 +307,8 @@ export class CanvasDatatable {
                         this.ctx.drawImage.apply(this.ctx, [...preDefArgs, ...pos, ...postDefArgs])
                     };
                     renderer(x, y, cellWidth, fillStyle);
-                    resolve(renderer);
+                    const release = () => bitmap.close()
+                    resolve({ renderer, release });
                 })
             }
             img.src = String.raw`data:image/svg+xml;charset=utf-8,${this.renderSVGTemplate(html, width, height, fillStyle)}`;
@@ -335,7 +339,7 @@ export class CanvasDatatable {
 
         const { rowHeight, columns, font, fontSize } = this.options
 
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.canvas.height = (this.data.length + 1) * rowHeight;
         this.canvas.width = this.state.cols.reduce((w, col) => w + col.width, 0);
@@ -374,18 +378,20 @@ export class CanvasDatatable {
                 const { width, renderCache } = colState;
                 this.ctx.strokeRect(xRender, yRender, width, rowHeight);
                 this.ctx.fillRect(xRender - 1, yRender, width + 1, rowHeight)
-                const { value, renderer } = renderCache[dataIndex] || {};
+                const { value, renderer, release } = renderCache[dataIndex] || {};
                 const hasValueChanged = !(value === d[col.key] && renderer)
                 if (!hasValueChanged) {
                     renderer(xRender, yRender, width, fillStyle);
                 }
                 if (noCache || hasValueChanged) {
+                    if (release) { release() }
                     const html = (col.render || defaultCellRenderer)(d[col.key] || "", d, font)
                     this.renderHTML(html, xRender, yRender, width, rowHeight, col.align)
-                        .then(renderer => {
+                        .then(({ renderer, release }) => {
                             renderCache[dataIndex] = {
                                 value: d[col.key],
-                                renderer
+                                renderer,
+                                release
                             };
                         });
                 }
