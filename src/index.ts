@@ -26,6 +26,7 @@ export class CanvasDatatable {
     public static fonts: string[] = []
 
     private data: any[]
+    private frame: number
     private options: CanvasDatatableOptions
     private canvas: HTMLCanvasElement
     private ctx: CanvasRenderingContext2D
@@ -79,6 +80,7 @@ export class CanvasDatatable {
         window.addEventListener("click", onMouseClick);
         
         this.data = options.initialData
+        this.frame = 0
         this.options = options
         this.canvas = canvas
         this.ctx = canvas.getContext("2d", { alpha: true })
@@ -249,7 +251,8 @@ export class CanvasDatatable {
         y: number,
         cellWidth: number,
         cellHeight: number,
-        alignment: CellAlignment
+        alignment: CellAlignment,
+        frame: number
     ): Promise<{
         renderer: CellRenderer,
         release: () => void
@@ -275,7 +278,9 @@ export class CanvasDatatable {
             const imgSelected = new Image();
             let imgHoverBitmap: ImageBitmap, imgSelectedBitmap: ImageBitmap
             img.onload = () => {
+                if (this.frame !== frame) { return resolve(null) }
                 window.createImageBitmap(img).then(bitmap => {
+                    if (this.frame !== frame) { return resolve(null) }
                     const renderer = (x: number, y: number, cellWidth: number, fillStyle: string = hexToRGBA('#FFFFFF')) => {
                         let bitmapRender = bitmap
                         switch (fillStyle) {
@@ -340,6 +345,11 @@ export class CanvasDatatable {
 
     public render(renderOptions: RenderOptions = defaultRenderOptions) {
 
+        let frame: number
+        if ((frame = this.frame++) === Number.MAX_SAFE_INTEGER) {
+            this.frame = 0
+        }
+
         const { noCache = false } = renderOptions
 
         const { rowHeight, columns, font, fontSize } = this.options
@@ -391,8 +401,10 @@ export class CanvasDatatable {
                 if (noCache || hasValueChanged) {
                     if (release) { release() }
                     const html = (col.render || defaultCellRenderer)(d[col.key] || "", d, font)
-                    this.renderHTML(html, xRender, yRender, width, rowHeight, col.align)
-                        .then(({ renderer, release }) => {
+                    this.renderHTML(html, xRender, yRender, width, rowHeight, col.align, this.frame)
+                        .then(result => {
+                            if (!result) { return }
+                            const { renderer, release } = result
                             renderCache[dataIndex] = {
                                 value: d[col.key],
                                 renderer,
