@@ -1,6 +1,5 @@
 import { ifndef } from "./ifndef";
 import { fetchFontFile } from "./fetchFontFile";
-import { debounce } from "./debounce";
 import { defaultCellRenderer } from "./defaultCellRenderer";
 import { CanvasDatatableOptions, CellAlignment, CanvasDatatableState, CellRenderer, RenderOptions } from "./types";
 import { hexToRGBA } from "./hexToRGBA";
@@ -26,12 +25,12 @@ export class CanvasDatatable {
     public static fonts: string[] = []
 
     private data: any[]
-    private frame: number
     private options: CanvasDatatableOptions
     private canvas: HTMLCanvasElement
     private ctx: CanvasRenderingContext2D
     private state: CanvasDatatableState
     private getEventHandlers: any
+    private releaseRender: () => void
 
     public constructor(canvas: HTMLCanvasElement, options: CanvasDatatableOptions = defaultOptions) {
 
@@ -70,9 +69,7 @@ export class CanvasDatatable {
         const onMouseLeave = this.onMouseLeave.bind(this)
         const onMouseClick = this.onMouseClick.bind(this)
         
-        const debouncedOnMouseMove = debounce(onMouseMove, 0, true)
-
-        canvas.addEventListener("mousemove", debouncedOnMouseMove);
+        canvas.addEventListener("mousemove", onMouseMove);
         canvas.addEventListener("mousedown", onMouseDown);
         canvas.addEventListener("mouseleave", onMouseLeave)
         
@@ -80,7 +77,6 @@ export class CanvasDatatable {
         window.addEventListener("click", onMouseClick);
         
         this.data = options.initialData
-        this.frame = 0
         this.options = options
         this.canvas = canvas
         this.ctx = canvas.getContext("2d", { alpha: true })
@@ -90,6 +86,7 @@ export class CanvasDatatable {
             onMouseClick
         })
         CanvasDatatable.instances.push(this)
+        this.releaseRender = function() {}
 
         this.render()
     }
@@ -252,7 +249,6 @@ export class CanvasDatatable {
         cellWidth: number,
         cellHeight: number,
         alignment: CellAlignment,
-        frame: number
     ): Promise<{
         renderer: CellRenderer,
         release: () => void
@@ -278,9 +274,7 @@ export class CanvasDatatable {
             const imgSelected = new Image();
             let imgHoverBitmap: ImageBitmap, imgSelectedBitmap: ImageBitmap
             img.onload = () => {
-                if (this.frame !== frame) { return resolve(null) }
                 window.createImageBitmap(img).then(bitmap => {
-                    if (this.frame !== frame) { return resolve(null) }
                     const renderer = (x: number, y: number, cellWidth: number, fillStyle: string = hexToRGBA('#FFFFFF')) => {
                         let bitmapRender = bitmap
                         switch (fillStyle) {
@@ -345,16 +339,13 @@ export class CanvasDatatable {
 
     public render(renderOptions: RenderOptions = defaultRenderOptions) {
 
-        let frame: number
-        if ((frame = this.frame++) === Number.MAX_SAFE_INTEGER) {
-            this.frame = 0
-        }
+        let done
+        this.releaseRender()
+        this.releaseRender = () => done = true
 
         const { noCache = false } = renderOptions
 
         const { rowHeight, columns, font, fontSize } = this.options
-
-        // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.canvas.height = (this.data.length + 1) * rowHeight;
         this.canvas.width = this.state.cols.reduce((w, col) => w + col.width, 0);
@@ -362,7 +353,8 @@ export class CanvasDatatable {
         let xRender = 0,
             yRender = 0;
 
-        columns.forEach((col, i) => {
+        for (const col of columns) {
+            if (done) { return }
             const { width } = this.getColState(col.key);
             this.ctx.strokeStyle = "#999";
             this.ctx.strokeRect(xRender, yRender, width, rowHeight);
@@ -379,16 +371,18 @@ export class CanvasDatatable {
             );
 
             xRender += width;
-        })
+        }
 
         xRender = 0;
         this.ctx.font = `normal ${fontSize}px ${font}`;
         this.ctx.fillStyle = "#FFF"
         this.data.forEach((d, dataIndex) => {
+            if (done) { return }
             xRender = 0;
             yRender += rowHeight;
             const fillStyle = this.getColBgColor(dataIndex)
             columns.forEach(col => {
+                if (done) { return }
                 const colState = this.getColState(col.key);
                 const { width, renderCache } = colState;
                 this.ctx.strokeRect(xRender, yRender, width, rowHeight);
@@ -401,7 +395,7 @@ export class CanvasDatatable {
                 if (noCache || hasValueChanged) {
                     if (release) { release() }
                     const html = (col.render || defaultCellRenderer)(d[col.key] || "", d, font)
-                    this.renderHTML(html, xRender, yRender, width, rowHeight, col.align, this.frame)
+                    this.renderHTML(html, xRender, yRender, width, rowHeight, col.align)
                         .then(result => {
                             if (!result) { return }
                             const { renderer, release } = result
