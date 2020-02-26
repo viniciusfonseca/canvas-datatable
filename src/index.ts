@@ -339,7 +339,7 @@ export class CanvasDatatable {
 
     public render(renderOptions: RenderOptions = defaultRenderOptions) {
 
-        let done
+        let done = false
         this.releaseRender()
         this.releaseRender = () => done = true
 
